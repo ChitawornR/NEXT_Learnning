@@ -1,6 +1,6 @@
 services:
   db:
-    image: mysql:9.5.0
+    image: mysql:8.0        # ← แก้ตรงนี้
     container_name: db
     environment:
       MYSQL_DATABASE: test_next
@@ -12,6 +12,7 @@ services:
       - ./db_init:/docker-entrypoint-initdb.d
     networks:
       - mynetwork
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: phpmyadmin
@@ -24,6 +25,9 @@ services:
       - 8080:80
     depends_on:
       - db
+    networks:
+      - mynetwork
+
   api:
     build: .
     environment:
@@ -37,6 +41,7 @@ services:
       - db
     networks:
       - mynetwork
+
 networks:
   mynetwork:
     driver: bridge
