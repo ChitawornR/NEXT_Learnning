@@ -35,6 +35,7 @@ services:
       DB_USER: root
       DB_PASSWORD: root
       DB_NAME: test_next
+      NEXTAUTH_SECRET: afsdifuhasdfi142i3u5h2ijhiu235hij234ju
     ports:
       - 3000:3000
     depends_on:
