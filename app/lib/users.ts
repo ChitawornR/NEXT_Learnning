@@ -1,5 +1,6 @@
 import { createConnect } from "./db";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
+import bcrypt from "bcryptjs";
 
 export interface User {
   id: number;
@@ -44,15 +45,18 @@ export async function createUser(user: NewUser): Promise<User> {
   const db = await createConnect();
 
   const query = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
+  // แฮชรหัสผ่านก่อนเก็บ
+  const hashedPassword = await bcrypt.hash(user.password, 10);
+
   // [result] คือ ResultSetHeader (มี insertId)
-  const [result] = await db.query<ResultSetHeader>(query, [user.name, user.email, user.password]);
+  const [result] = await db.query<ResultSetHeader>(query, [user.name, user.email, hashedPassword]);
 
   // 💡 แนะนำ: สร้าง User Object ใหม่ โดยเพิ่ม ID ที่เพิ่งถูกสร้างขึ้น
   const newUserWithId: User = {
     id: result.insertId,
     name: user.name,
     email: user.email,
-    password: user.password,
+    password: hashedPassword,
   };
 
   return newUserWithId;
@@ -62,9 +66,15 @@ export async function updateUser(user: User): Promise<User> {
   const db = await createConnect();
 
   const query = "UPDATE users SET name = ?, email = ?, password = ? WHERE id = ?";
-  
+
+  // หาก password ที่ส่งมาเป็น plaintext ให้แฮชก่อน (ถ้าเป็น hashed อยู่แล้ว ให้ข้าม)
+  let passwordToStore = user.password;
+  if (!passwordToStore.startsWith("$2")) {
+    passwordToStore = await bcrypt.hash(passwordToStore, 10);
+  }
+
   // result เป็น ResultSetHeader
-  const [result] = await db.query<ResultSetHeader>(query, [user.name, user.email, user.password, user.id]);
+  const [result] = await db.query<ResultSetHeader>(query, [user.name, user.email, passwordToStore, user.id]);
 
   // 💡 แนะนำ: ตรวจสอบว่ามีการอัปเดตเกิดขึ้นจริง
   if (result.affectedRows === 0) {
@@ -84,6 +94,13 @@ export async function updateUser(user: User): Promise<User> {
   
   return updatedUser;
   // หากไม่ต้องการ Fetch ใหม่ ให้ return user; แต่ต้องรับความเสี่ยงเรื่องความไม่สมบูรณ์ของข้อมูล
+}
+
+export async function getUserFromEmail(email: string): Promise<User | null> {
+  const db = await createConnect();
+  const query = "SELECT * FROM users WHERE email = ?";
+  const [rows] = await db.query<RowDataPacket[]>(query, [email]);
+  return rows[0] as User | null;
 }
 
 export async function deleteUser(id: number): Promise<void> {
