@@ -1,9 +1,0 @@
-interface Book {
-    id: number;
-    title: string;
-    author: string;
-    price: number;
-    createdAt: Date;
-    updatedAt: Date;
-    deletedAt: Date;
-}
