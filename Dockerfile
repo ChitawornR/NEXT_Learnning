@@ -12,9 +12,6 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build Next.js app
-RUN npm run build
-
 
 
 # Stage 2: Production stage
